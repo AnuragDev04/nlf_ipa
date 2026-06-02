@@ -1,0 +1,55 @@
+name: nlf
+description: "A new Flutter project."
+publish_to: 'none'
+
+version: 1.0.1+6
+
+environment:
+  sdk: ^3.8.1
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+  http: ^0.13.5
+  shared_preferences: ^2.2.2
+  fluttertoast: ^8.2.4
+  flutter_svg: ^2.0.0+1
+  google_fonts: ^4.0.4
+  device_preview: ^1.3.1
+  cached_network_image: ^3.2.3
+  image_picker: ^0.8.9
+  html_editor_enhanced: ^2.7.1
+  geolocator: ^14.0.2
+  geocoding: ^4.0.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+
+  flutter_launcher_icons: ^0.13.1
+
+
+flutter_launcher_icons:
+  android: "launcher"
+  ios: true
+  image_path: "assets/images/logo.png"
+  remove_alpha_ios: true
+  min_sdk_android:
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/images/demologo.png
+    - assets/images/account.svg
+    - assets/images/downarrow.svg
+    - assets/images/try.png
+    - assets/images/change.jpg
+    - assets/images/logo.png
+
+#  fonts:
+#    - family: calibri
+#      fonts:
+#        - asset: assets/fonts/calibri.ttf
+#          weight: 400
