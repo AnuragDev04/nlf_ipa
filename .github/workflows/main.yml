@@ -19,38 +19,37 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
-      - name: Set iOS deployment target in Podfile
-        run: |
-          cd ios
-          # Set minimum iOS deployment target to 13.0
-          if [ -f Podfile ]; then
-            sed -i '' "s/# platform :ios, '12.0'/platform :ios, '13.0'/" Podfile
-            sed -i '' "s/platform :ios, '[0-9]*\.[0-9]*'/platform :ios, '13.0'/" Podfile
-          fi
-          # Also update AppFrameworkInfo.plist MinimumOSVersion
-          plutil -replace MinimumOSVersion -string "13.0" Flutter/AppFrameworkInfo.plist || true
-
       - name: Install CocoaPods dependencies
+        run: pod install --repo-update
+        working-directory: ios
+
+      - name: Build iOS with xcodebuild (no codesign)
         run: |
-          cd ios
-          flutter pub get
-          pod install --repo-update
-        working-directory: ${{ github.workspace }}
+          xcodebuild \
+            -workspace ios/Runner.xcworkspace \
+            -scheme Runner \
+            -configuration Release \
+            -sdk iphoneos \
+            -derivedDataPath build/ios/derived \
+            FLUTTER_BUILD_MODE=release \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            PROVISIONING_PROFILE="" \
+            build
 
-      - name: Build iOS (no codesign)
-        run: flutter build ios --release --no-codesign
+      - name: Locate built Runner.app
+        run: |
+          find build/ios/derived -name "Runner.app" -type d
+          APP_PATH=$(find build/ios/derived -name "Runner.app" -type d | head -1)
+          echo "APP_PATH=$APP_PATH" >> $GITHUB_ENV
 
-      - name: Create Payload directory
-        run: mkdir -p Payload
-        working-directory: build/ios/iphoneos
-
-      - name: Move Runner.app into Payload
-        run: mv Runner.app Payload/
-        working-directory: build/ios/iphoneos
-
-      - name: Zip into IPA
-        run: zip -qq -r -9 FlutterIpaExport.ipa Payload
-        working-directory: build/ios/iphoneos
+      - name: Create IPA from Runner.app
+        run: |
+          mkdir -p build/ios/iphoneos/Payload
+          cp -r "$APP_PATH" build/ios/iphoneos/Payload/Runner.app
+          cd build/ios/iphoneos
+          zip -qq -r -9 FlutterIpaExport.ipa Payload
 
       - name: Upload IPA to release
         uses: svenstaro/upload-release-action@v2
