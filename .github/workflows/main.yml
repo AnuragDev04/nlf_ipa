@@ -24,18 +24,39 @@ jobs:
         working-directory: ios
 
       - name: Build iOS (no codesign)
-        run: flutter build ios --release --no-codesign
+        run: |
+          flutter build ios --release --no-codesign \
+            --dart-define=FLUTTER_BUILD_NUMBER=1
+        env:
+          EXPANDED_CODE_SIGN_IDENTITY: ""
+          EXPANDED_CODE_SIGN_IDENTITY_NAME: ""
+          PROVISIONING_PROFILE: ""
 
-      - name: Create Payload directory
-        run: mkdir -p Payload
-        working-directory: build/ios/iphoneos
+      - name: Build with xcodebuild (no signing)
+        run: |
+          xcodebuild \
+            -workspace ios/Runner.xcworkspace \
+            -scheme Runner \
+            -configuration Release \
+            -sdk iphoneos \
+            -archivePath build/ios/Runner.xcarchive \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            PROVISIONING_PROFILE="" \
+            archive
 
-      - name: Move Runner.app into Payload
-        run: mv Runner.app Payload/
-        working-directory: build/ios/iphoneos
+      - name: Export .app from archive
+        run: |
+          mkdir -p build/ios/iphoneos
+          cp -r build/ios/Runner.xcarchive/Products/Applications/Runner.app \
+            build/ios/iphoneos/Runner.app
 
-      - name: Zip into IPA
-        run: zip -qq -r -9 FlutterIpaExport.ipa Payload
+      - name: Create Payload and zip IPA
+        run: |
+          mkdir -p Payload
+          mv Runner.app Payload/
+          zip -qq -r -9 FlutterIpaExport.ipa Payload
         working-directory: build/ios/iphoneos
 
       - name: Upload IPA to release
