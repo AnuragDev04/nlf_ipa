@@ -19,6 +19,9 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
+      - name: Clean and regenerate iOS plugin registrant
+        run: flutter build ios --release --no-codesign --config-only
+
       - name: Install CocoaPods dependencies
         run: pod install --repo-update
         working-directory: ios

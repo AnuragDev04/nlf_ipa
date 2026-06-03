@@ -20,6 +20,7 @@ dependencies:
   cached_network_image: ^3.2.3
   image_picker: ^0.8.9
   html_editor_enhanced: ^2.7.1
+  file_picker: ^10.3.10
   geolocator: ^14.0.2
   geocoding: ^4.0.0
 
