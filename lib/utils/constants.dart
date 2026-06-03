@@ -127,4 +127,27 @@ class AppConstants {
   static const String DELETE_EMPLOYEE_DATA_API = "$BASE_URL/Erp/delete_employee_data";
   static const String UPDATE_EMPLOYEE_DATA_API = "$BASE_URL/Erp/update_employee";
 
+
+
+  static const String JOB_APPLICATION_LIST_API = "$BASE_URL/Nlf_Erp/getJobApplication";
+  static const String ADD_JOB_APPLICATION_API = "$BASE_URL/Nlf_Erp/add_application";
+  static const String FETCH_JOB_APPLICATION_API = "$BASE_URL/Nlf_Erp/getJobApplicationById";
+  static const String DELETE_JOB_APPLICATION_API = "$BASE_URL/Nlf_Erp/deleteJobApplication";
+  static const String UPDATE_JOB_APPLICATION_API = "$BASE_URL/Nlf_Erp/updateJobApplicationStatus";
+  static const String ADD_LEAVE_API = "$BASE_URL/Api/add_live";
+  static const String OFFER_LETTER_LIST_API = "$BASE_URL/Nlf_Erp/getOfferLatter";
+  static const String ADD_OFFER_LETTER_API = "$BASE_URL/Nlf_Erp/addOfferLatter";
+  static const String DELETE_OFFER_LETTER_API = "$BASE_URL/Nlf_Erp/deleteOfferLatter";
+  static const String UPDATE_OFFER_LETTER_STATUS_API = "$BASE_URL/Nlf_Erp/updateOfferLetter";
+  static const String APPOINTMENT_LETTER_LIST_API = "$BASE_URL/Nlf_Erp/getAppointment";
+  static const String ADD_APPOINTMENT_LETTER_API = "$BASE_URL/Nlf_Erp/addAppointment";
+  static const String DELETE_APPOINTMENT_LETTER_API = "$BASE_URL/Nlf_Erp/deleteAppointment";
+  static const String FETCH_APPOINTMENT_DATA_API = "$BASE_URL/Nlf_Erp/getAppointmentById";
+  static const String UPDATE_APPOINTMENT_LETTER_API = "$BASE_URL/Nlf_Erp/updateAppointment";
+  static const String ATTENDANCE_LIST_API = "$BASE_URL/Api/list_attendance";
+  static const String ATTENDANCE_GET_LIST_API = "$BASE_URL/Nlf_Erp/getAttendance";
+  static const String UPDATE_LEAVE_APPROVAL_API = "$BASE_URL/Api/update_leave";
+  static const String UPCOMING_BIRTHDAYS_API = "$BASE_URL/Api/upcoming_birthdays";
+  static const String FETCH_ATTENDANCE_API = "$BASE_URL/Nlf_Erp/getAttendanceByID";
+
 }

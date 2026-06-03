@@ -28,6 +28,7 @@ class _AttendanceScreenState extends State<AttendanceScreen> with RouteAware {
   // ✅ NEW: Track selected tab index and admin status
   int _selectedTabIndex = 1; // Default to Monthly for non-admin; admin overrides to 0 after load
   bool _isAdmin = false;
+  String _currentEmpId = '';
 
   // ✅ Admin-only: raw per-employee data from the API
   List<Map<String, dynamic>> _allEmployeeRecords = [];
@@ -106,6 +107,7 @@ class _AttendanceScreenState extends State<AttendanceScreen> with RouteAware {
     // Update state synchronously before fetch
     userName = name;
     _isAdmin = isAdminUser;
+    _currentEmpId = empId;
     if (isAdminUser) {
       _selectedTabIndex = 0; // Admin defaults to Today tab
     }
@@ -405,6 +407,7 @@ class _AttendanceScreenState extends State<AttendanceScreen> with RouteAware {
 
               fetchedRecords.add(
                 AttendanceRecord(
+                  empId: toStr(empData?['id']),
                   date: dateString,
                   day: calculatedDayName,
                   checkIn: toStr(dayObj['check_in']).isNotEmpty
@@ -804,6 +807,7 @@ class _AttendanceScreenState extends State<AttendanceScreen> with RouteAware {
                                   final dayNum = d['day'] is int ? d['day'] as int : int.tryParse(d['day'].toString()) ?? -1;
                                   if (dayNum == now.day) {
                                     todayRecord = AttendanceRecord(
+                                      empId: emp['id']?.toString() ?? emp['emp_id']?.toString(),
                                       date: todayFormatted,
                                       day: DateFormat('EEEE').format(now),
                                       checkIn: (d['check_in']?.toString() ?? '').isNotEmpty ? d['check_in'].toString() : '--',
@@ -825,6 +829,7 @@ class _AttendanceScreenState extends State<AttendanceScreen> with RouteAware {
                             todayRecord = attendanceList.firstWhere(
                               (r) => r.date == todayFormatted,
                               orElse: () => AttendanceRecord(
+                                empId: _currentEmpId,
                                 date: todayFormatted,
                                 day: DateFormat('EEEE').format(now),
                                 checkIn: '--', checkOut: '--',
@@ -1588,6 +1593,7 @@ class _AttendanceScreenState extends State<AttendanceScreen> with RouteAware {
                           GestureDetector(
                             onTap: () => _AttendanceDetailPopup.show(
                               context: context,
+                              empId: int.tryParse(record.empId ?? _currentEmpId) ?? 0,
                               name: userName,
                               date: record.date,
                               day: record.day,
@@ -2102,21 +2108,25 @@ class _AttendanceScreenState extends State<AttendanceScreen> with RouteAware {
                               const SizedBox(width: 8),
                               // ── View icon inline after OT ──────────────
                               GestureDetector(
-                                onTap: () => _AttendanceDetailPopup.show(
-                                  context: context,
-                                  name: empName,
-                                  date: "$currentYear-${currentMonth.toString().padLeft(2, '0')}-${todayDay.toString().padLeft(2, '0')}",
-                                  day: dayName,
-                                  checkIn: checkIn,
-                                  checkOut: checkOut,
-                                  checkInLocation: checkInAdd,
-                                  checkOutLocation: checkOutAdd,
-                                  checkInSelfie: '',
-                                  checkOutSelfie: '',
-                                  workedHr: workedHr,
-                                  regularHr: regularHr,
-                                  overtimeHr: overtimeHr,
-                                ),
+                                onTap: () {
+                                  final empIdStr = emp['id']?.toString() ?? emp['emp_id']?.toString() ?? empCode;
+                                  _AttendanceDetailPopup.show(
+                                    context: context,
+                                    empId: int.tryParse(empIdStr) ?? 0,
+                                    name: empName,
+                                    date: "$currentYear-${currentMonth.toString().padLeft(2, '0')}-${todayDay.toString().padLeft(2, '0')}",
+                                    day: dayName,
+                                    checkIn: checkIn,
+                                    checkOut: checkOut,
+                                    checkInLocation: checkInAdd,
+                                    checkOutLocation: checkOutAdd,
+                                    checkInSelfie: '',
+                                    checkOutSelfie: '',
+                                    workedHr: workedHr,
+                                    regularHr: regularHr,
+                                    overtimeHr: overtimeHr,
+                                  );
+                                },
                                 child: Container(
                                   padding: const EdgeInsets.all(7),
                                   decoration: BoxDecoration(
@@ -2467,8 +2477,10 @@ class _AdminMonthlyEmployeeCardState extends State<_AdminMonthlyEmployeeCard> {
                       final checkInSelfie = d['check_in_selfie']?.toString() ?? '';
                       final checkOutSelfie = d['check_out_selfie']?.toString() ?? '';
                       final dateStr = '$selectedYearNum-${selectedMonthNum.toString().padLeft(2, '0')}-${dayNum.toString().padLeft(2, '0')}';
+                      final empIdStr = widget.emp['id']?.toString() ?? widget.emp['emp_id']?.toString() ?? widget.emp['emp_code']?.toString() ?? '';
                       _AttendanceDetailPopup.show(
                         context: context,
+                        empId: int.tryParse(empIdStr) ?? 0,
                         name: empName,
                         date: dateStr,
                         day: dayName,
@@ -2502,6 +2514,7 @@ class _AdminMonthlyEmployeeCardState extends State<_AdminMonthlyEmployeeCard> {
 } // end _AdminMonthlyEmployeeCardState
 
 class AttendanceRecord {
+  final String? empId;
   final String date;
   final String day;
   final String checkIn;
@@ -2522,6 +2535,7 @@ class AttendanceRecord {
   final String checkOutAdd;
 
   const AttendanceRecord({
+    this.empId,
     required this.date,
     required this.day,
     required this.checkIn,
@@ -2543,13 +2557,40 @@ class AttendanceRecord {
   });
 }
 
-// ════════════════════════════════════════════════════════════════════
-// ATTENDANCE DETAIL POPUP
-// ════════════════════════════════════════════════════════════════════
+class _AttendanceDetailPopup extends StatefulWidget {
+  final int empId;
+  final String name;
+  final String date;
+  final String day;
+  final String initialCheckIn;
+  final String initialCheckOut;
+  final String initialCheckInLocation;
+  final String initialCheckOutLocation;
+  final String initialCheckInSelfie;
+  final String initialCheckOutSelfie;
+  final String initialWorkedHr;
+  final String initialRegularHr;
+  final String initialOvertimeHr;
 
-class _AttendanceDetailPopup {
+  const _AttendanceDetailPopup({
+    required this.empId,
+    required this.name,
+    required this.date,
+    required this.day,
+    required this.initialCheckIn,
+    required this.initialCheckOut,
+    required this.initialCheckInLocation,
+    required this.initialCheckOutLocation,
+    required this.initialCheckInSelfie,
+    required this.initialCheckOutSelfie,
+    required this.initialWorkedHr,
+    required this.initialRegularHr,
+    required this.initialOvertimeHr,
+  });
+
   static void show({
     required BuildContext context,
+    required int empId,
     required String name,
     required String date,
     required String day,
@@ -2563,117 +2604,311 @@ class _AttendanceDetailPopup {
     required String regularHr,
     required String overtimeHr,
   }) {
-    String formattedDate = date;
-    try {
-      formattedDate = DateFormat('d MMMM yyyy').format(DateFormat('yyyy-MM-dd').parse(date));
-    } catch (_) {}
-
     showDialog(
       context: context,
-      builder: (_) => Dialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // ── Header ────────────────────────────────────────────────
+      builder: (_) => _AttendanceDetailPopup(
+        empId: empId,
+        name: name,
+        date: date,
+        day: day,
+        initialCheckIn: checkIn,
+        initialCheckOut: checkOut,
+        initialCheckInLocation: checkInLocation,
+        initialCheckOutLocation: checkOutLocation,
+        initialCheckInSelfie: checkInSelfie,
+        initialCheckOutSelfie: checkOutSelfie,
+        initialWorkedHr: workedHr,
+        initialRegularHr: regularHr,
+        initialOvertimeHr: overtimeHr,
+      ),
+    );
+  }
+
+  @override
+  State<_AttendanceDetailPopup> createState() => _AttendanceDetailPopupState();
+}
+
+class _AttendanceDetailPopupState extends State<_AttendanceDetailPopup> {
+  bool _isLoading = true;
+  String? _error;
+
+  String? _checkIn;
+  String? _checkOut;
+  String? _checkInLocation;
+  String? _checkOutLocation;
+  String? _checkInSelfie;
+  String? _checkOutSelfie;
+  String? _workedHr;
+  String? _regularHr;
+  String? _overtimeHr;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchDetails();
+  }
+
+  Future<void> _fetchDetails() async {
+    if (!mounted) return;
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+
+    try {
+      DateTime? parsedDate;
+      try {
+        parsedDate = DateFormat('yyyy-MM-dd').parse(widget.date);
+      } catch (_) {
+        try {
+          parsedDate = DateTime.parse(widget.date);
+        } catch (_) {}
+      }
+
+      final now = parsedDate ?? DateTime.now();
+      final dayParam = now.day.toString();
+      final monthParam = DateFormat('MMMM').format(now);
+      final yearParam = now.year.toString();
+
+      final url = Uri.parse("https://nlfs.in/erp/index.php/Nlf_Erp/getAttendanceByID");
+      final requestBody = {
+        "id": widget.empId,
+        "day": dayParam,
+        "Month": monthParam,
+        "Year": yearParam,
+      };
+
+      debugPrint("[Popup API] POST $url | Body: ${jsonEncode(requestBody)}");
+
+      final response = await http.post(
+        url,
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode(requestBody),
+      ).timeout(const Duration(seconds: 15));
+
+      debugPrint("[Popup API] Status: ${response.statusCode}");
+      debugPrint("[Popup API] Body: ${response.body}");
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> jsonResponse = json.decode(response.body);
+        final dynamic statusRaw = jsonResponse['status'];
+        final bool isSuccess = statusRaw == true ||
+            statusRaw == 1 ||
+            statusRaw?.toString().toLowerCase() == 'true';
+
+        if (isSuccess && jsonResponse['data'] != null) {
+          final data = jsonResponse['data'] as Map<String, dynamic>;
+          final List<dynamic> daysList = (data['days'] as List<dynamic>?) ?? [];
+
+          int requestedDay = int.tryParse(dayParam) ?? 1;
+          int? dayFilterVal = int.tryParse(jsonResponse['day_filter']?.toString() ?? '');
+
+          Map<String, dynamic>? matchedDayObj;
+          if (daysList.isNotEmpty) {
+            if (dayFilterVal != null) {
+              for (var d in daysList) {
+                final dNum = d['day'] is int ? d['day'] as int : int.tryParse(d['day'].toString());
+                if (dNum == dayFilterVal) {
+                  matchedDayObj = d;
+                  break;
+                }
+              }
+            }
+            if (matchedDayObj == null) {
+              for (var d in daysList) {
+                final dNum = d['day'] is int ? d['day'] as int : int.tryParse(d['day'].toString());
+                if (dNum == requestedDay) {
+                  matchedDayObj = d;
+                  break;
+                }
+              }
+            }
+            matchedDayObj ??= daysList.first;
+          }
+
+          if (matchedDayObj != null) {
+            final matched = matchedDayObj;
+            if (mounted) {
+              setState(() {
+                _checkIn = matched['check_in']?.toString();
+                _checkOut = matched['check_out']?.toString();
+                _checkInLocation = matched['checkInAdd']?.toString();
+                _checkOutLocation = matched['checkOutAdd']?.toString();
+                _checkInSelfie = matched['check_in_selfie']?.toString();
+                _checkOutSelfie = matched['check_out_selfie']?.toString();
+                _workedHr = matched['worked_hr']?.toString();
+                _regularHr = matched['regular_hr']?.toString();
+                _overtimeHr = matched['overtime_hr']?.toString();
+                _isLoading = false;
+              });
+            }
+            return;
+          }
+        }
+      }
+      throw 'No attendance data found for the selected day';
+    } catch (e) {
+      debugPrint("[Popup API] Error: $e");
+      if (mounted) {
+        setState(() {
+          _error = e.toString();
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    String formattedDate = widget.date;
+    try {
+      formattedDate = DateFormat('d MMMM yyyy').format(DateFormat('yyyy-MM-dd').parse(widget.date));
+    } catch (_) {}
+
+    final displayCheckIn = (_isLoading ? null : _checkIn) ?? widget.initialCheckIn;
+    final displayCheckOut = (_isLoading ? null : _checkOut) ?? widget.initialCheckOut;
+    final displayCheckInLocation = (_isLoading ? null : _checkInLocation) ?? widget.initialCheckInLocation;
+    final displayCheckOutLocation = (_isLoading ? null : _checkOutLocation) ?? widget.initialCheckOutLocation;
+    final displayCheckInSelfie = (_isLoading ? null : _checkInSelfie) ?? widget.initialCheckInSelfie;
+    final displayCheckOutSelfie = (_isLoading ? null : _checkOutSelfie) ?? widget.initialCheckOutSelfie;
+    final displayWorkedHr = (_isLoading ? null : _workedHr) ?? widget.initialWorkedHr;
+    final displayRegularHr = (_isLoading ? null : _regularHr) ?? widget.initialRegularHr;
+    final displayOvertimeHr = (_isLoading ? null : _overtimeHr) ?? widget.initialOvertimeHr;
+
+    return Dialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // ── Header ────────────────────────────────────────────────
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.fromLTRB(20, 18, 16, 18),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                border: Border(
+                  bottom: BorderSide(color: Colors.grey[200]!, width: 1),
+                ),
+              ),
+              child: Row(
+                children: [
+                  CircleAvatar(
+                    radius: 22,
+                    backgroundColor: const Color(0xFF3B82F6).withValues(alpha: 0.1),
+                    child: Text(
+                      widget.name.isNotEmpty ? widget.name[0].toUpperCase() : '?',
+                      style: const TextStyle(color: Color(0xFF3B82F6), fontWeight: FontWeight.bold, fontSize: 18, fontFamily: 'serif'),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(widget.name,
+                            style: const TextStyle(color: Colors.black, fontSize: 16, fontWeight: FontWeight.bold, fontFamily: 'serif')),
+                        const SizedBox(height: 3),
+                        Text('$formattedDate  •  ${widget.day}',
+                            style: TextStyle(color: Colors.grey[600], fontSize: 12, fontFamily: 'serif')),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () => Navigator.pop(context),
+                    icon: Icon(Icons.close_rounded, color: Colors.grey[700], size: 20),
+                  ),
+                ],
+              ),
+            ),
+            // Live loading progress indicator directly below header
+            if (_isLoading)
+              const SizedBox(
+                height: 2,
+                child: LinearProgressIndicator(
+                  backgroundColor: Colors.transparent,
+                  valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF3B82F6)),
+                ),
+              )
+            else if (_error != null)
               Container(
                 width: double.infinity,
-                padding: const EdgeInsets.fromLTRB(20, 18, 16, 18),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  border: Border(
-                    bottom: BorderSide(color: Colors.grey[200]!, width: 1),
-                  ),
-                ),
+                color: const Color(0xFFFEF2F2),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
                 child: Row(
                   children: [
-                    CircleAvatar(
-                      radius: 22,
-                      backgroundColor: const Color(0xFF3B82F6).withValues(alpha: 0.1),
-                      child: Text(
-                        name.isNotEmpty ? name[0].toUpperCase() : '?',
-                        style: const TextStyle(color: Color(0xFF3B82F6), fontWeight: FontWeight.bold, fontSize: 18, fontFamily: 'serif'),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
+                    const Icon(Icons.warning_amber_rounded, size: 14, color: Color(0xFFDC2626)),
+                    const SizedBox(width: 6),
                     Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(name,
-                              style: const TextStyle(color: Colors.black, fontSize: 16, fontWeight: FontWeight.bold, fontFamily: 'serif')),
-                          const SizedBox(height: 3),
-                          Text('$formattedDate  •  $day',
-                              style: TextStyle(color: Colors.grey[600], fontSize: 12, fontFamily: 'serif')),
-                        ],
+                      child: Text(
+                        'Could not refresh data. Showing cached values.',
+                        style: const TextStyle(fontSize: 11, color: Color(0xFFDC2626), fontFamily: 'serif'),
                       ),
                     ),
-                    IconButton(
-                      onPressed: () => Navigator.pop(context),
-                      icon: Icon(Icons.close_rounded, color: Colors.grey[700], size: 20),
+                    GestureDetector(
+                      onTap: _fetchDetails,
+                      child: const Text('Retry', style: TextStyle(fontSize: 11, color: Color(0xFFDC2626), fontWeight: FontWeight.bold, fontFamily: 'serif')),
                     ),
                   ],
                 ),
               ),
-              // ── Scrollable body ───────────────────────────────────────
-              Flexible(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Hours summary chips
-                      SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        child: Row(
-                          children: [
-                            _chip(Icons.work_history_rounded, 'Worked', workedHr, Colors.blueGrey[700]!),
-                            const SizedBox(width: 8),
-                            _chip(Icons.timer_rounded, 'Regular', regularHr, const Color(0xFF4338CA)),
-                            const SizedBox(width: 8),
-                            _chip(Icons.more_time_rounded, 'OT', overtimeHr, const Color(0xFF7C3AED)),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 18),
-                      // Punch-In / Punch-Out side by side
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+            // ── Scrollable body ───────────────────────────────────────
+            Flexible(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Hours summary chips
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
                         children: [
-                          Expanded(child: _punchSection(
-                            label: 'Punch-In',
-                            icon: Icons.login_rounded,
-                            iconColor: const Color(0xFF3B82F6),
-                            time: checkIn,
-                            location: checkInLocation,
-                            selfieUrl: checkInSelfie,
-                          )),
-                          const SizedBox(width: 12),
-                          Expanded(child: _punchSection(
-                            label: 'Punch-Out',
-                            icon: Icons.logout_rounded,
-                            iconColor: const Color(0xFF10B981),
-                            time: checkOut,
-                            location: checkOutLocation,
-                            selfieUrl: checkOutSelfie,
-                          )),
+                          _chip(Icons.work_history_rounded, 'Worked', displayWorkedHr, Colors.blueGrey[700]!),
+                          const SizedBox(width: 8),
+                          _chip(Icons.timer_rounded, 'Regular', displayRegularHr, const Color(0xFF4338CA)),
+                          const SizedBox(width: 8),
+                          _chip(Icons.more_time_rounded, 'OT', displayOvertimeHr, const Color(0xFF7C3AED)),
                         ],
                       ),
-                    ],
-                  ),
+                    ),
+                    const SizedBox(height: 18),
+                    // Punch-In / Punch-Out side by side
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(child: _punchSection(
+                          label: 'Punch-In',
+                          icon: Icons.login_rounded,
+                          iconColor: const Color(0xFF3B82F6),
+                          time: displayCheckIn,
+                          location: displayCheckInLocation,
+                          selfieUrl: displayCheckInSelfie,
+                        )),
+                        const SizedBox(width: 12),
+                        Expanded(child: _punchSection(
+                          label: 'Punch-Out',
+                          icon: Icons.logout_rounded,
+                          iconColor: const Color(0xFF10B981),
+                          time: displayCheckOut,
+                          location: displayCheckOutLocation,
+                          selfieUrl: displayCheckOutSelfie,
+                        )),
+                      ],
+                    ),
+                  ],
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
   }
 
-  static Widget _chip(IconData icon, String label, String value, Color color) {
+  Widget _chip(IconData icon, String label, String value, Color color) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
       decoration: BoxDecoration(
@@ -2693,7 +2928,7 @@ class _AttendanceDetailPopup {
     );
   }
 
-  static Widget _punchSection({
+  Widget _punchSection({
     required String label,
     required IconData icon,
     required Color iconColor,
@@ -2765,7 +3000,7 @@ class _AttendanceDetailPopup {
     );
   }
 
-  static Widget _selfieplaceholder(Color color) {
+  Widget _selfieplaceholder(Color color) {
     return Container(
       height: 110,
       width: double.infinity,

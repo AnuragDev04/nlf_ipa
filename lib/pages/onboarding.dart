@@ -282,7 +282,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           onPressed: () => Navigator.pop(context),
         ),
         title: const Text(
-          'NEW EMPLOYEE',
+          'New Employee',
           style: TextStyle(
             color: Colors.black,
             fontWeight: FontWeight.bold,

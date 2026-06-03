@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:nlf/pages/appointment_generation_screen.dart';
+import 'package:nlf/pages/leave_approval_list_screen.dart';
+import 'package:nlf/pages/offer_generation_screen.dart';
 import 'package:nlf/pages/recruitment_process.dart';
+import 'package:nlf/pages/upcoming_birthday_screen.dart';
 import 'package:nlf/utils/colors.dart';
 import 'attendance_screen.dart';
-import 'claim.dart';
 import 'employee.dart';
 import 'leave_approvals.dart';
 import 'onboarding.dart' hide AppColors;
@@ -23,7 +26,7 @@ class HrMainScreen extends StatelessWidget {
           },
         ),
         title: Text(
-          "HR MANAGEMENT",
+          "HR Management",
           style: TextStyle(
             color: Colors.black,
             fontWeight: FontWeight.bold,
@@ -116,15 +119,15 @@ class HrMainScreen extends StatelessWidget {
 
               // ✅ Updated: Added onTap to navigate to LeaveApprovalsScreen
               _buildNotificationCard(
-                'Pending Leave Approvals (for managers)',
-                '5 requests waiting for your approval',
+                'Leave Approvals',
+                'Request waiting for approval',
                 Icons.pending_actions,
                 Colors.orange,
                 onTap: () {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => LeaveApprovalsScreen(),
+                      builder: (context) => LeaveApprovalListScreen(),
                     ),
                   );
                 },
@@ -133,30 +136,20 @@ class HrMainScreen extends StatelessWidget {
 
               _buildNotificationCard(
                 'Upcoming Birthdays',
-                '3 employee birthdays this week',
+                'Employees birthdays this week',
                 Icons.cake,
                 Colors.pink,
                 onTap: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text("Upcoming Birthdays clicked")),
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const UpcomingBirthdayScreen(),
+                    ),
                   );
                 },
               ),
               SizedBox(height: 10),
 
-              _buildNotificationCard(
-                'Time to Submit Timesheet',
-                '12 employees need to submit timesheets',
-                Icons.schedule,
-                Colors.blue,
-                onTap: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text("Timesheet reminder clicked")),
-                  );
-                },
-              ),
-
-              SizedBox(height: 25),
 
               // Quick Access Shortcuts
               Row(
@@ -286,15 +279,29 @@ class HrMainScreen extends StatelessWidget {
                       );
                     },
                   ),
-                  // ✅ Employee Claim Card - Now navigates to ClaimsScreen
                   HRModuleCard(
-                    title: 'Employee\nClaim',
-                    icon: Icons.receipt,
+                    title: 'Offer Letter\nGenerator',
+                    icon: Icons.description_outlined,
                     color: Colors.purple[600]!,
                     onTap: () {
                       Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (context) => ClaimsScreen()),
+                        MaterialPageRoute(
+                          builder: (context) => OfferGenerationScreen(),
+                        ),
+                      );
+                    },
+                  ),
+                  HRModuleCard(
+                    title: 'Appointment Letter\nGenerator',
+                    icon: Icons.assignment_outlined,
+                    color: Colors.indigo[600]!,
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => AppointmentGenerationScreen(),
+                        ),
                       );
                     },
                   ),
